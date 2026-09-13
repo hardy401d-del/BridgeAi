@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARI — BridgeAI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#00D1FF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ARI">
+<style>
+  :root{
+    --bg: #0F1B2B;
+    --bg-panel: #152539;
+    --bg-panel-2: #1B2D45;
+    --ink: #EDEFF4;
+    --ink-muted: #8FA0B8;
+    --amber: #E8A94C;
+    --teal: #4FD1C5;
+    --line: #26374F;
+    --danger: #E06A6A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height:1.5;
+    min-height:100vh;
+  }
+  .wrap{ max-width: 560px; margin: 0 auto; padding: 28px 18px 60px; }
+  header{ margin-bottom: 28px; }
+  .brand{ display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
+  .brand-mark{
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 30px; font-weight: 600; letter-spacing: 0.5px; color: var(--ink);
+  }
+  .brand-sub{ color: var(--ink-muted); font-size: 13px; }
+  .tagline{
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 17px; color: var(--ink-muted); max-width: 46ch; margin-top: 10px;
+  }
+  .note{
+    font-size: 12.5px; color: var(--ink-muted);
+    background: var(--bg-panel); border:1px solid var(--line);
+    border-radius: 8px; padding: 10px 12px; margin-top: 16px;
+  }
+  .note code{ color: var(--teal); }
+
+  .config-row{ display:flex; gap:8px; margin-top:10px; }
+  .config-row input{ flex:1; }
+  .config-row button{
+    background: transparent; border:1px solid var(--line); color: var(--ink-muted);
+    padding: 0 14px; border-radius: 8px; font-size: 13px; cursor:pointer;
+  }
+
+  .tab-nav{ display:flex; gap:8px; margin-bottom:22px; border-bottom:1px solid var(--line); }
+  .tab-btn{
+    flex:1; background:none; border:none; color: var(--ink-muted);
+    font-size:14px; font-weight:600; padding:10px 4px 12px; cursor:pointer;
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .tab-btn.active{ color: var(--teal); border-bottom-color: var(--teal); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  .bridge-rule{
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line) 15%, var(--line) 85%, transparent);
+    margin: 24px 0; position: relative;
+  }
+  .bridge-rule::after{
+    content:""; position:absolute; top:-3px; left:50%; transform: translateX(-50%);
+    width:7px; height:7px; border-radius:50%; background: var(--amber);
+  }
+
+  .field{ margin-bottom: 18px; }
+  label{ display:block; font-size: 13px; color: var(--ink-muted); margin-bottom: 6px; }
+  input[type=text], input[type=number], input[type=url], textarea{
+    width:100%; background: var(--bg-panel); border: 1px solid var(--line);
+    color: var(--ink); padding: 12px 13px; border-radius: 8px; font-size: 15px; font-family: inherit;
+  }
+  select#providerSelect{
+    background: var(--bg-panel); border: 1px solid var(--line);
+    color: var(--ink); padding: 12px 10px; border-radius: 8px; font-size: 14px; font-family: inherit;
+  }
+  select#providerSelect:focus{ outline: 2px solid var(--teal); outline-offset: 1px; border-color: var(--teal); }
+  textarea{ resize: vertical; min-height: 64px; }
+  input:focus, textarea:focus{
+    outline: 2px solid var(--teal); outline-offset: 1px; border-color: var(--teal);
+  }
+  .field-row{ display:flex; gap:12px; }
+  .field-row .field{ flex:1; }
+
+  button.primary{
+    width:100%; background: var(--amber); color: #1A1305; border: none;
+    padding: 15px; font-size: 16px; font-weight: 600; border-radius: 8px; cursor: pointer; margin-top: 6px;
+  }
+  button.primary:active{ transform: scale(0.99); }
+  button.primary:disabled{ opacity:0.6; cursor:default; }
+
+  .status{ margin-top: 14px; font-size: 14px; color: var(--teal); display:none; }
+  .status.show{ display:block; }
+  .error-box{
+    margin-top:14px; padding:12px 14px; background: rgba(224,106,106,0.1);
+    border:1px solid var(--danger); border-radius:8px; color: var(--danger); font-size:14px; display:none;
+  }
+  .error-box.show{ display:block; }
+
+  #results{ display:none; margin-top: 8px; }
+  #results.show{ display:block; }
+  #emptyState{ display:none; margin-top:8px; color: var(--ink-muted); font-size:14px; }
+  #emptyState.show{ display:block; }
+
+  .section-title{ font-family: Georgia, "Times New Roman", serif; font-size: 20px; margin: 0 0 4px; }
+  .section-sub{ font-size: 13px; color: var(--ink-muted); margin: 0 0 16px; }
+
+  .opp{ border-left: 3px solid var(--line); padding: 4px 0 4px 16px; margin-bottom: 22px; }
+  .opp.top{ border-left-color: var(--amber); }
+  .opp-top{ display:flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .opp-title{ font-weight: 600; font-size: 15.5px; }
+  .opp-score{ font-variant-numeric: tabular-nums; color: var(--teal); font-size: 14px; white-space: nowrap; }
+  .opp.top .opp-score{ color: var(--amber); }
+  .opp-platform{ color: var(--ink-muted); font-size: 13px; margin-top: 3px; }
+  .opp-grid{
+    display:grid; grid-template-columns: auto 1fr; gap: 4px 10px;
+    font-size: 13px; margin-top: 10px; color: var(--ink-muted);
+  }
+  .opp-grid dt{ color: var(--ink-muted); }
+  .opp-grid dd{ margin:0; color: var(--ink); }
+  .opp-grid dd.unverified{ color: var(--ink-muted); font-style: italic; }
+  .unverified-inline{ color: var(--ink-muted); font-style: italic; }
+  .opp-link{
+    display:inline-block; margin-top: 10px; font-size: 13px; color: var(--teal); text-decoration:none;
+    border-bottom: 1px solid var(--teal); word-break: break-all;
+  }
+
+  .panel{
+    background: var(--bg-panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px; margin-top: 6px;
+  }
+
+  .disclaimer{
+    margin-top: 30px; font-size: 12px; color: var(--ink-muted);
+    border-top: 1px solid var(--line); padding-top: 14px;
+  }
+  .reset-link{
+    display:inline-block; margin-top: 22px; color: var(--ink-muted); font-size: 13px;
+    text-decoration: underline; cursor: pointer; background:none; border:none; padding:0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <span class="brand-mark">ARI</span>
+      <span class="brand-sub">v0.1 — BridgeAI · ARI FIND + ARI CREATE</span>
+    </div>
+    <div class="tagline">Recherche réelle d'opportunités, adaptée à ton profil.</div>
+    <div class="note">
+      ARI interroge maintenant un vrai serveur de recherche (pas de données inventées). Configure d'abord l'adresse de ton backend ci-dessous — voir <code>README.md</code> pour le déployer en 10 minutes depuis ton téléphone.
+      <div class="config-row">
+        <input type="url" id="backendUrl" placeholder="https://ton-backend.onrender.com">
+        <button id="saveBackend" type="button">OK</button>
+      </div>
+      <div class="config-row">
+        <select id="providerSelect" style="flex:0 0 auto;">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="gemini">Google (Gemini)</option>
+        </select>
+        <input type="text" id="apiKeyInput" placeholder="Ta clé API (optionnelle)">
+      </div>
+      <div style="font-size:11.5px;color:var(--ink-muted);margin-top:4px;">Ta clé reste enregistrée dans ce navigateur (tu n'as pas à la retaper), et part uniquement vers ton propre backend à chaque recherche — jamais ailleurs. Choisis le fournisseur correspondant à ta clé (Anthropic commence par "sk-ant-", Gemini se crée sur aistudio.google.com).</div>
+    </div>
+  </header>
+
+  <div class="tab-nav">
+    <button type="button" class="tab-btn active" id="tabBtnFind">ARI FIND</button>
+    <button type="button" class="tab-btn" id="tabBtnCreate">ARI CREATE</button>
+  </div>
+
+  <div class="tab-panel active" id="findTab">
+
+  <form id="profileForm">
+    <div class="field">
+      <label for="appareil">Appareil disponible</label>
+      <input type="text" id="appareil" value="Smartphone Android uniquement">
+    </div>
+    <div class="field">
+      <label for="langues">Langues parlées</label>
+      <input type="text" id="langues" value="Français, anglais">
+    </div>
+    <div class="field">
+      <label for="competences">Compétences</label>
+      <textarea id="competences">Rédaction, traduction, informatique, droit (Master 2)</textarea>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="disponibilite">Disponibilité</label>
+        <input type="text" id="disponibilite" value="Temps plein">
+      </div>
+      <div class="field">
+        <label for="pays">Pays</label>
+        <input type="text" id="pays" value="Madagascar">
+      </div>
+    </div>
+    <div class="field">
+      <label for="objectif">Objectif financier (€)</label>
+      <input type="number" id="objectif" value="20">
+    </div>
+    <div class="field">
+      <label for="ciblage">Ciblage additionnel (optionnel)</label>
+      <textarea id="ciblage" placeholder="Ex : entreprises établies avec un besoin réel et durable de mes services, plutôt que des annonces ponctuelles"></textarea>
+    </div>
+
+    <button type="submit" class="primary" id="submitBtn">Rechercher de vraies opportunités</button>
+    <div class="status" id="statusMsg">ARI recherche sur le web… (peut prendre 20–40 secondes)</div>
+    <div class="error-box" id="errorBox"></div>
+  </form>
+
+  <div id="results">
+    <div class="bridge-rule"></div>
+    <div class="section-title">Opportunités trouvées</div>
+    <div class="section-sub" id="resultMeta"></div>
+    <div id="oppList"></div>
+
+    <div id="targetedSection" style="display:none;">
+      <div class="bridge-rule"></div>
+      <div class="section-title">Ciblage additionnel</div>
+      <div class="section-sub">Résultats en plus, selon ton ciblage — ils s'ajoutent à la liste ci-dessus, ils ne la remplacent pas.</div>
+      <div id="targetedList"></div>
+    </div>
+
+    <button class="reset-link" id="resetBtn">← Nouvelle recherche</button>
+  </div>
+
+  <div id="emptyState">
+    <div class="bridge-rule"></div>
+    <div class="panel">Aucune opportunité réelle trouvée pour ce profil pour l'instant. Essaie d'élargir les compétences déclarées ou réessaie plus tard.</div>
+  </div>
+
+  <div class="disclaimer">
+    Chaque opportunité provient d'une recherche web réelle et affiche sa source. Les champs marqués "non vérifié" n'ont pas pu être confirmés — vérifie-les toi-même avant de postuler. Aucune candidature n'est envoyée automatiquement.
+  </div>
+
+  </div>
+
+  <div class="tab-panel" id="createTab">
+    <div class="section-sub" style="margin-bottom:16px;">
+      Une opportunité trouvée ailleurs (LinkedIn, groupe Facebook, site d'une entreprise...) ? Renseigne-la ici pour qu'ARI rédige directement ta candidature — sans passer par ARI FIND.
+    </div>
+
+    <form id="manualForm">
+      <div class="field">
+        <label for="mTitle">Titre du poste / de la mission</label>
+        <input type="text" id="mTitle" placeholder="Ex : Rédacteur juridique freelance" required>
+      </div>
+      <div class="field">
+        <label for="mPlatform">Plateforme / entreprise</label>
+        <input type="text" id="mPlatform" placeholder="Ex : LinkedIn, Upwork, site de l'entreprise...">
+      </div>
+      <div class="field">
+        <label for="mSkills">Compétences demandées (si connues)</label>
+        <textarea id="mSkills" placeholder="Ex : rédaction, droit, anglais courant"></textarea>
+      </div>
+      <div class="field">
+        <label for="mUrl">Lien vers l'annonce (optionnel)</label>
+        <input type="url" id="mUrl" placeholder="https://...">
+      </div>
+
+      <div class="field" style="background:var(--bg-panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;">
+          <input type="checkbox" id="usePuter" checked style="width:auto;">
+          Utiliser Puter.js (IA gratuite, aucune clé requise)
+        </label>
+        <div style="font-size:11.5px;color:var(--ink-muted);margin-top:6px;">
+          Une fenêtre Puter peut s'ouvrir la première fois pour créer un compte gratuit (aucune carte bancaire). Décoche pour utiliser plutôt ta propre clé Anthropic/Gemini configurée en haut.
+        </div>
+      </div>
+
+      <button type="submit" class="primary" id="manualSubmitBtn">Rédiger la candidature</button>
+      <div class="create-status" id="status-manual" style="display:none;font-size:12.5px;color:var(--ink-muted);margin-top:8px;">Rédaction en cours…</div>
+      <div class="create-draft" id="draft-manual" style="display:none;margin-top:10px;background:var(--bg-panel-2);border:1px solid var(--line);border-radius:8px;padding:12px;font-size:13.5px;white-space:pre-wrap;"></div>
+      <button type="button" class="copy-draft-btn" id="copy-manual" style="display:none;margin-top:8px;background:transparent;border:1px solid var(--line);color:var(--ink-muted);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;">Copier</button>
+    </form>
+  </div>
+
+</div>
+
+<script src="https://js.puter.com/v2/"></script>
+<script>
+const form = document.getElementById('profileForm');
+const submitBtn = document.getElementById('submitBtn');
+const statusMsg = document.getElementById('statusMsg');
+const errorBox = document.getElementById('errorBox');
+const results = document.getElementById('results');
+const emptyState = document.getElementById('emptyState');
+const oppList = document.getElementById('oppList');
+const resultMeta = document.getElementById('resultMeta');
+const resetBtn = document.getElementById('resetBtn');
+const backendUrlInput = document.getElementById('backendUrl');
+const saveBackendBtn = document.getElementById('saveBackend');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const providerSelect = document.getElementById('providerSelect');
+
+// Mémorise l'URL du backend dans la page.
+// Si l'interface est servie directement par le backend (même origine), on la pré-remplit.
+let BACKEND_URL = '';
+if (location.origin && location.origin.startsWith('http') && location.hostname !== 'localhost') {
+  BACKEND_URL = location.origin;
+  backendUrlInput.value = BACKEND_URL;
+  backendUrlInput.style.borderColor = 'var(--teal)';
+}
+saveBackendBtn.addEventListener('click', () => {
+  BACKEND_URL = backendUrlInput.value.trim().replace(/\/$/, '');
+  backendUrlInput.style.borderColor = BACKEND_URL ? 'var(--teal)' : 'var(--line)';
+});
+
+// Persistance de la clé API et du fournisseur dans le navigateur du téléphone (localStorage) :
+// reste disponible d'une session à l'autre, tant que tu n'effaces pas les données du site.
+// Ça ne quitte jamais ton téléphone à part vers ton propre backend à chaque requête.
+try {
+  const savedKey = localStorage.getItem('ari_api_key');
+  const savedProvider = localStorage.getItem('ari_provider');
+  if (savedKey) apiKeyInput.value = savedKey;
+  if (savedProvider) providerSelect.value = savedProvider;
+} catch (e) { /* localStorage indisponible, on continue sans persistance */ }
+
+apiKeyInput.addEventListener('input', () => {
+  try { localStorage.setItem('ari_api_key', apiKeyInput.value.trim()); } catch (e) {}
+});
+providerSelect.addEventListener('change', () => {
+  try { localStorage.setItem('ari_provider', providerSelect.value); } catch (e) {}
+});
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
+function fieldOrUnverified(value){
+  const v = (value || '').toString().trim();
+  if (!v || v.toLowerCase().includes('non vérifié') || v.toLowerCase().includes('non verifie')) {
+    return '<span class="unverified-inline">non vérifié</span>';
+  }
+  return escapeHtml(v);
+}
+
+function isUnverified(value){
+  const v = (value || '').toString().trim().toLowerCase();
+  return !v || v.includes('non vérifié') || v.includes('non verifie');
+}
+
+function buildOppCard(opp, isTop, index, listKind){
+  const div = document.createElement('div');
+  div.className = 'opp' + (isTop ? ' top' : '');
+  const cardId = listKind + '-' + index;
+  div.innerHTML = `
+    <div class="opp-top">
+      <span class="opp-title">${escapeHtml(opp.title)}</span>
+      <span class="opp-score">${escapeHtml(opp.match_score)}%</span>
+    </div>
+    <div class="opp-platform">${escapeHtml(opp.platform)}</div>
+    <dl class="opp-grid">
+      <dt>Rémunération</dt><dd class="${isUnverified(opp.pay) ? 'unverified' : ''}">${fieldOrUnverified(opp.pay)}</dd>
+      <dt>Compétences</dt><dd class="${isUnverified(opp.required_skills) ? 'unverified' : ''}">${fieldOrUnverified(opp.required_skills)}</dd>
+      <dt>Restriction géo</dt><dd class="${isUnverified(opp.geo_restriction) ? 'unverified' : ''}">${fieldOrUnverified(opp.geo_restriction)}</dd>
+      <dt>Paiement</dt><dd class="${isUnverified(opp.payment_method) ? 'unverified' : ''}">${fieldOrUnverified(opp.payment_method)}</dd>
+      <dt>Publié le</dt><dd class="${isUnverified(opp.published_date) ? 'unverified' : ''}">${fieldOrUnverified(opp.published_date)}</dd>
+      ${opp.targeting_reason ? `<dt>Pourquoi ce ciblage</dt><dd>${escapeHtml(opp.targeting_reason)}</dd>` : ''}
+    </dl>
+    ${opp.url ? `<a class="opp-link" href="${escapeHtml(opp.url)}" target="_blank" rel="noopener">${escapeHtml(opp.url)}</a>` : ''}
+    <div style="margin-top:12px;">
+      <button type="button" class="create-btn" data-card="${cardId}" style="background:transparent;border:1px solid var(--teal);color:var(--teal);padding:8px 12px;border-radius:6px;font-size:13px;cursor:pointer;">Rédiger la candidature</button>
+      <div class="create-status" id="status-${cardId}" style="display:none;font-size:12.5px;color:var(--ink-muted);margin-top:8px;">Rédaction en cours…</div>
+      <div class="create-draft" id="draft-${cardId}" style="display:none;margin-top:10px;background:var(--bg-panel-2);border:1px solid var(--line);border-radius:8px;padding:12px;font-size:13.5px;white-space:pre-wrap;"></div>
+      <button type="button" class="copy-draft-btn" id="copy-${cardId}" style="display:none;margin-top:8px;background:transparent;border:1px solid var(--line);color:var(--ink-muted);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;">Copier</button>
+    </div>
+  `;
+  div.querySelector('.create-btn').addEventListener('click', () => generateDraft(opp, cardId));
+  return div;
+}
+
+function buildCreatePromptForPuter(profile, opp){
+  return [
+    "Tu es ARI, un assistant qui aide des freelances à rédiger des candidatures percutantes et honnêtes.",
+    "Rédige en français un message de candidature court (120-200 mots), professionnel et chaleureux, prêt à être envoyé tel quel.",
+    "Ne mens jamais et n'invente aucune expérience non mentionnée ci-dessous.",
+    "",
+    "Profil du candidat :",
+    "- Compétences : " + (profile.competences || "non précisé"),
+    "- Langues : " + (profile.langues || "non précisé"),
+    "- Disponibilité : " + (profile.disponibilite || "non précisé"),
+    "- Pays : " + (profile.pays || "non précisé"),
+    "- Appareil : " + (profile.appareil || "non précisé"),
+    "",
+    "Opportunité visée :",
+    "- Titre : " + (opp.title || "non précisé"),
+    "- Plateforme / entreprise : " + (opp.platform || "non précisé"),
+    "- Compétences demandées : " + (opp.required_skills || "non précisé"),
+    opp.url ? ("- Lien : " + opp.url) : "",
+    "",
+    "Réponds uniquement avec le texte de la candidature, sans introduction ni commentaire."
+  ].filter(Boolean).join("\n");
+}
+
+function extractPuterText(response){
+  if (typeof response === 'string') return response;
+  if (response && response.message && response.message.content) {
+    const c = response.message.content;
+    if (Array.isArray(c)) return c.map(b => (b && b.text) ? b.text : '').join('\n').trim();
+    if (typeof c === 'string') return c;
+  }
+  if (response && typeof response.text === 'string') return response.text;
+  if (response && response.toString) return response.toString();
+  return JSON.stringify(response);
+}
+
+async function generateDraft(opp, cardId, btnEl, usePuter){
+  const btn = btnEl || document.querySelector(`.create-btn[data-card="${cardId}"]`);
+  const statusEl = document.getElementById('status-' + cardId);
+  const draftEl = document.getElementById('draft-' + cardId);
+  const copyBtn = document.getElementById('copy-' + cardId);
+
+  if (!usePuter && !BACKEND_URL) {
+    alert("Configure d'abord l'adresse de ton backend en haut de la page.");
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.style.display = 'block';
+  draftEl.style.display = 'none';
+  copyBtn.style.display = 'none';
+
+  const profile = {
+    appareil: document.getElementById('appareil').value.trim(),
+    langues: document.getElementById('langues').value.trim(),
+    competences: document.getElementById('competences').value.trim(),
+    disponibilite: document.getElementById('disponibilite').value.trim(),
+    pays: document.getElementById('pays').value.trim()
+  };
+
+  try {
+    let draftText;
+
+    if (usePuter) {
+      if (typeof puter === 'undefined' || !puter.ai) {
+        throw new Error("Puter.js n'a pas pu se charger (vérifie ta connexion internet).");
+      }
+      const prompt = buildCreatePromptForPuter(profile, opp);
+      const response = await puter.ai.chat(prompt, { model: 'anthropic/claude-sonnet-5' });
+      draftText = extractPuterText(response);
+    } else {
+      const response = await fetch(BACKEND_URL + '/api/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile, opportunity: opp, apiKey: document.getElementById('apiKeyInput').value.trim(), provider: document.getElementById('providerSelect').value })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || ('Erreur serveur : ' + response.status));
+      }
+      draftText = data.draft;
+    }
+
+    draftEl.textContent = draftText;
+    draftEl.style.display = 'block';
+    copyBtn.style.display = 'inline-block';
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(draftText);
+      copyBtn.textContent = 'Copié !';
+      setTimeout(() => { copyBtn.textContent = 'Copier'; }, 1500);
+    };
+  } catch (err) {
+    draftEl.textContent = "Erreur : " + err.message;
+    draftEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    statusEl.style.display = 'none';
+  }
+}
+
+function renderResults(data){
+  const opportunities = data.opportunities || [];
+  const targeted = data.targeted_opportunities || [];
+
+  if (opportunities.length === 0 && targeted.length === 0) {
+    results.classList.remove('show');
+    emptyState.classList.add('show');
+    emptyState.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+
+  emptyState.classList.remove('show');
+  resultMeta.textContent = opportunities.length + ' résultat(s) — recherche effectuée à l\'instant';
+  oppList.innerHTML = '';
+  opportunities.forEach((opp, i) => oppList.appendChild(buildOppCard(opp, i === 0, i, 'gen')));
+
+  const targetedSection = document.getElementById('targetedSection');
+  const targetedList = document.getElementById('targetedList');
+  if (targeted.length > 0) {
+    targetedList.innerHTML = '';
+    targeted.forEach((opp, i) => targetedList.appendChild(buildOppCard(opp, false, i, 'tgt')));
+    targetedSection.style.display = 'block';
+  } else {
+    targetedSection.style.display = 'none';
+  }
+
+  results.classList.add('show');
+  results.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorBox.classList.remove('show');
+  results.classList.remove('show');
+  emptyState.classList.remove('show');
+
+  if (!BACKEND_URL) {
+    errorBox.textContent = "Configure d'abord l'adresse de ton backend ci-dessus (voir README.md).";
+    errorBox.classList.add('show');
+    return;
+  }
+
+  const profile = {
+    appareil: document.getElementById('appareil').value.trim(),
+    langues: document.getElementById('langues').value.trim(),
+    competences: document.getElementById('competences').value.trim(),
+    disponibilite: document.getElementById('disponibilite').value.trim(),
+    pays: document.getElementById('pays').value.trim(),
+    objectif: document.getElementById('objectif').value.trim(),
+    ciblage: document.getElementById('ciblage').value.trim(),
+    apiKey: document.getElementById('apiKeyInput').value.trim(),
+    provider: document.getElementById('providerSelect').value
+  };
+
+  submitBtn.disabled = true;
+  statusMsg.classList.add('show');
+
+  try {
+    const response = await fetch(BACKEND_URL + '/api/find', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || ('Erreur serveur : ' + response.status));
+    }
+
+    renderResults(data);
+
+  } catch (err) {
+    errorBox.textContent = "Une erreur est survenue : " + err.message;
+    errorBox.classList.add('show');
+  } finally {
+    submitBtn.disabled = false;
+    statusMsg.classList.remove('show');
+  }
+});
+
+resetBtn.addEventListener('click', () => {
+  results.classList.remove('show');
+  emptyState.classList.remove('show');
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+// --- Onglets FIND / CREATE : indépendants, CREATE ne dépend plus d'un résultat FIND ---
+const tabBtnFind = document.getElementById('tabBtnFind');
+const tabBtnCreate = document.getElementById('tabBtnCreate');
+const findTab = document.getElementById('findTab');
+const createTab = document.getElementById('createTab');
+
+function activateTab(name){
+  const isFind = name === 'find';
+  tabBtnFind.classList.toggle('active', isFind);
+  tabBtnCreate.classList.toggle('active', !isFind);
+  findTab.classList.toggle('active', isFind);
+  createTab.classList.toggle('active', !isFind);
+}
+tabBtnFind.addEventListener('click', () => activateTab('find'));
+tabBtnCreate.addEventListener('click', () => activateTab('create'));
+
+// --- ARI CREATE manuel : renseigner une opportunité trouvée ailleurs, sans passer par FIND ---
+const manualForm = document.getElementById('manualForm');
+const manualSubmitBtn = document.getElementById('manualSubmitBtn');
+
+manualForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  const willUsePuter = document.getElementById('usePuter').checked;
+  if (!willUsePuter && !BACKEND_URL) {
+    alert("Configure d'abord l'adresse de ton backend en haut de la page (ou coche l'option Puter.js pour t'en passer).");
+    return;
+  }
+
+  const title = document.getElementById('mTitle').value.trim();
+  if (!title) return;
+
+  const opp = {
+    title: title,
+    platform: document.getElementById('mPlatform').value.trim() || 'non vérifié',
+    required_skills: document.getElementById('mSkills').value.trim() || 'non vérifié',
+    url: document.getElementById('mUrl').value.trim(),
+    pay: 'non vérifié',
+    geo_restriction: 'non vérifié',
+    payment_method: 'non vérifié',
+    published_date: 'non vérifié',
+    match_score: ''
+  };
+
+  generateDraft(opp, 'manual', manualSubmitBtn, document.getElementById('usePuter').checked);
+});
+</script>
+</body>
+</html>
